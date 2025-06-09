@@ -1,43 +1,60 @@
-import React, { useState } from 'react';
-import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
-import { TrendingUp, DollarSign, Shield, Target, User, Calendar, Loader } from 'lucide-react';
+import React, { useState } from "react";
+import {
+  PieChart,
+  Pie,
+  Cell,
+  ResponsiveContainer,
+  Legend,
+  Tooltip,
+} from "recharts";
+import {
+  TrendingUp,
+  DollarSign,
+  Shield,
+  Target,
+  User,
+  Calendar,
+  Loader,
+} from "lucide-react";
 import PortfolioPage from "./PortfolioPage";
 import HomePage from "./HomePage";
+import { fetchInvestmentRecommendation } from "../api/api";
+import PortfolioDashboard from "./recommendations";
 
 // PortfolioRecommender component
 const PortfolioRecommender = ({ onNavigate, setUserData }) => {
   const [formData, setFormData] = useState({
-    name: '',
-    age: '',
-    income: '',
-    riskTolerance: '',
-    goal: '',
+    name: "",
+    age: "",
+    income: "",
+    riskTolerance: "",
+    goal: "",
     assets: [
       // Example initial asset
-      { assetType: '', name: '', symbol: '', quantity: '', currentValue: '' }
+      { assetType: "", name: "", symbol: "", quantity: "", currentValue: "" },
     ],
-    totalInvestment: '',
-    annualSavings: '',
-    timeHorizon: ''
+    totalInvestment: "",
+    annualSavings: "",
+    timeHorizon: "",
   });
 
   const [recommendation, setRecommendation] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
 
   // Handle input change for normal fields
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [name]: value
+      [name]: value,
     }));
   };
 
   // Handle asset field changes
   const handleAssetChange = (idx, e) => {
     const { name, value } = e.target;
-    setFormData(prev => {
+    setFormData((prev) => {
       const updatedAssets = prev.assets.map((asset, i) =>
         i === idx ? { ...asset, [name]: value } : asset
       );
@@ -47,17 +64,20 @@ const PortfolioRecommender = ({ onNavigate, setUserData }) => {
 
   // Add a new asset row
   const handleAddAsset = () => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      assets: [...prev.assets, { assetType: '', name: '', symbol: '', quantity: '', currentValue: '' }]
+      assets: [
+        ...prev.assets,
+        { assetType: "", name: "", symbol: "", quantity: "", currentValue: "" },
+      ],
     }));
   };
 
   // Remove an asset row
   const handleRemoveAsset = (idx) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      assets: prev.assets.filter((_, i) => i !== idx)
+      assets: prev.assets.filter((_, i) => i !== idx),
     }));
   };
 
@@ -72,22 +92,25 @@ const PortfolioRecommender = ({ onNavigate, setUserData }) => {
     // Adjust based on risk tolerance
     let riskMultiplier = 1;
     switch (riskTolerance) {
-      case 'Low':
+      case "Low":
         riskMultiplier = 0.7;
         break;
-      case 'Medium':
+      case "Medium":
         riskMultiplier = 1;
         break;
-      case 'High':
+      case "High":
         riskMultiplier = 1.3;
         break;
     }
 
-    stocks = Math.min(90, Math.max(10, Math.round(baseStockPercentage * riskMultiplier)));
+    stocks = Math.min(
+      90,
+      Math.max(10, Math.round(baseStockPercentage * riskMultiplier))
+    );
 
     // Adjust based on goal
     switch (goal) {
-      case 'Retirement':
+      case "Retirement":
         if (parseInt(age) > 50) {
           stocks = Math.max(30, stocks - 10);
           bonds = 60;
@@ -97,12 +120,12 @@ const PortfolioRecommender = ({ onNavigate, setUserData }) => {
           cash = 100 - stocks - bonds;
         }
         break;
-      case 'Education':
+      case "Education":
         stocks = Math.max(40, stocks - 5);
         bonds = Math.round((100 - stocks) * 0.7);
         cash = 100 - stocks - bonds;
         break;
-      case 'Growth':
+      case "Growth":
         stocks = Math.min(85, stocks + 5);
         bonds = Math.round((100 - stocks) * 0.6);
         cash = 100 - stocks - bonds;
@@ -121,7 +144,7 @@ const PortfolioRecommender = ({ onNavigate, setUserData }) => {
 
   const generateAIExplanation = async (userData, allocation) => {
     // Simulate AI API call with realistic explanation generation
-    await new Promise(resolve => setTimeout(resolve, 2000)); // Simulate API delay
+    await new Promise((resolve) => setTimeout(resolve, 2000)); // Simulate API delay
 
     const { age, riskTolerance, goal, income } = userData;
     const { stocks, bonds, cash } = allocation;
@@ -139,26 +162,26 @@ const PortfolioRecommender = ({ onNavigate, setUserData }) => {
 
     // Risk tolerance reasoning
     switch (riskTolerance) {
-      case 'Low':
+      case "Low":
         explanation += `Your conservative risk profile led us to emphasize stability with ${bonds}% bonds and ${cash}% cash, while still maintaining ${stocks}% stocks for inflation protection. `;
         break;
-      case 'Medium':
+      case "Medium":
         explanation += `Your moderate risk tolerance allows for a balanced approach with ${stocks}% stocks for growth and ${bonds}% bonds for stability. `;
         break;
-      case 'High':
+      case "High":
         explanation += `Your high risk tolerance enables aggressive growth with ${stocks}% stocks, accepting higher volatility for potentially greater returns. `;
         break;
     }
 
     // Goal-based reasoning
     switch (goal) {
-      case 'Retirement':
+      case "Retirement":
         explanation += `For retirement planning, we've structured this portfolio to provide long-term growth while gradually becoming more conservative as you approach retirement age.`;
         break;
-      case 'Education':
+      case "Education":
         explanation += `For education funding, this allocation balances growth potential with capital preservation, ensuring funds will be available when needed.`;
         break;
-      case 'Growth':
+      case "Growth":
         explanation += `For wealth growth, we've maximized equity exposure while maintaining prudent diversification across asset classes.`;
         break;
     }
@@ -167,6 +190,57 @@ const PortfolioRecommender = ({ onNavigate, setUserData }) => {
 
     return explanation;
   };
+
+  // const handleSubmit = async (e) => {
+  //   e.preventDefault();
+
+  //   if (
+  //     !formData.age ||
+  //     !formData.income ||
+  //     !formData.riskTolerance ||
+  //     !formData.goal ||
+  //     !formData.totalInvestment ||
+  //     !formData.annualSavings ||
+  //     !formData.timeHorizon
+  //   ) {
+  //     setError("Please fill in all required fields.");
+  //     return;
+  //   }
+
+  //   setLoading(true);
+  //   setError("");
+
+  //   try {
+  //     const allocation = calculatePortfolio(
+  //       formData.age,
+  //       formData.riskTolerance,
+  //       formData.goal
+  //     );
+  //     const explanation = await generateAIExplanation(formData, allocation);
+
+  //     setRecommendation({
+  //       allocation,
+  //       explanation,
+  //       userData: formData,
+  //     });
+  //     setUserData({
+  //       name: formData.name,
+  //       age: formData.age,
+  //       income: formData.income,
+  //       riskTolerance: formData.riskTolerance,
+  //       financialGoal: formData.goal,
+  //       assets: formData.assets,
+  //       totalInvestment: formData.totalInvestment,
+  //       annualSavings: formData.annualSavings,
+  //       timeHorizon: formData.timeHorizon,
+  //     });
+  //     onNavigate("portfolio");
+  //   } catch (err) {
+  //     setError("Failed to generate recommendation. Please try again.");
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -180,48 +254,45 @@ const PortfolioRecommender = ({ onNavigate, setUserData }) => {
       !formData.annualSavings ||
       !formData.timeHorizon
     ) {
-      setError('Please fill in all required fields.');
+      setError("Please fill in all required fields.");
       return;
     }
 
     setLoading(true);
-    setError('');
+    setError("");
 
-    try {
-      const allocation = calculatePortfolio(formData.age, formData.riskTolerance, formData.goal);
-      const explanation = await generateAIExplanation(formData, allocation);
+    const result = await fetchInvestmentRecommendation(formData);
 
-      setRecommendation({
-        allocation,
-        explanation,
-        userData: formData
-      });
-      setUserData({
-        name: formData.name,
-        age: formData.age,
-        income: formData.income,
-        riskTolerance: formData.riskTolerance,
-        financialGoal: formData.goal,
-        assets: formData.assets,
-        totalInvestment: formData.totalInvestment,
-        annualSavings: formData.annualSavings,
-        timeHorizon: formData.timeHorizon
-      });
-      onNavigate('portfolio');
-    } catch (err) {
-      setError('Failed to generate recommendation. Please try again.');
-    } finally {
-      setLoading(false);
+    console.log("API Result:", result);
+
+    if (result.success) {
+      setRecommendation(result.data);
+    } else {
+      setError(result.error);
     }
   };
 
-  const pieData = recommendation ? [
-    { name: 'Stocks', value: recommendation.allocation.stocks, color: '#0066CC' },
-    { name: 'Bonds', value: recommendation.allocation.bonds, color: '#66B2FF' },
-    { name: 'Cash', value: recommendation.allocation.cash, color: '#B3D9FF' }
-  ] : [];
+  const pieData = recommendation
+    ? [
+        {
+          name: "Stocks",
+          value: recommendation.allocation.stocks,
+          color: "#0066CC",
+        },
+        {
+          name: "Bonds",
+          value: recommendation.allocation.bonds,
+          color: "#66B2FF",
+        },
+        {
+          name: "Cash",
+          value: recommendation.allocation.cash,
+          color: "#B3D9FF",
+        },
+      ]
+    : [];
 
-  const COLORS = ['#0066CC', '#66B2FF', '#B3D9FF'];
+  const COLORS = ["#0066CC", "#66B2FF", "#B3D9FF"];
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-white">
@@ -233,15 +304,19 @@ const PortfolioRecommender = ({ onNavigate, setUserData }) => {
               <TrendingUp className="w-5 h-5 text-white" />
             </div>
             <div>
-              <h1 className="text-2xl font-bold text-gray-900">Citi Wealth Management</h1>
-              <p className="text-sm text-gray-600">AI-Powered Portfolio Recommender</p>
+              <h1 className="text-2xl font-bold text-gray-900">
+                Citi Wealth Management
+              </h1>
+              <p className="text-sm text-gray-600">
+                AI-Powered Portfolio Recommender
+              </p>
             </div>
           </div>
         </div>
       </div>
 
       <div className="max-w-6xl mx-auto px-6 py-8">
-        <div className="grid lg:grid-cols-2 gap-8">
+        <div className="grid lg:grid-cols-1 gap-8">
           {/* Form Section */}
           <div className="bg-white rounded-xl shadow-lg p-8">
             <h2 className="text-xl font-semibold text-gray-900 mb-6 flex items-center">
@@ -345,13 +420,16 @@ const PortfolioRecommender = ({ onNavigate, setUserData }) => {
                   Assets
                 </label>
                 {formData.assets.map((asset, idx) => (
-                  <div key={idx} className="mb-4 p-4 border rounded-lg bg-gray-50 relative">
+                  <div
+                    key={idx}
+                    className="mb-4 p-4 border rounded-lg bg-gray-50 relative"
+                  >
                     <div className="flex flex-col gap-2">
                       <input
                         type="text"
                         name="assetType"
                         value={asset.assetType}
-                        onChange={e => handleAssetChange(idx, e)}
+                        onChange={(e) => handleAssetChange(idx, e)}
                         className="px-2 py-1 border rounded"
                         placeholder="Asset Type (e.g. stock)"
                       />
@@ -359,7 +437,7 @@ const PortfolioRecommender = ({ onNavigate, setUserData }) => {
                         type="text"
                         name="name"
                         value={asset.name}
-                        onChange={e => handleAssetChange(idx, e)}
+                        onChange={(e) => handleAssetChange(idx, e)}
                         className="px-2 py-1 border rounded"
                         placeholder="Name (e.g. Apple Inc.)"
                       />
@@ -367,7 +445,7 @@ const PortfolioRecommender = ({ onNavigate, setUserData }) => {
                         type="text"
                         name="symbol"
                         value={asset.symbol}
-                        onChange={e => handleAssetChange(idx, e)}
+                        onChange={(e) => handleAssetChange(idx, e)}
                         className="px-2 py-1 border rounded"
                         placeholder="Symbol (e.g. AAPL)"
                       />
@@ -375,7 +453,7 @@ const PortfolioRecommender = ({ onNavigate, setUserData }) => {
                         type="number"
                         name="quantity"
                         value={asset.quantity}
-                        onChange={e => handleAssetChange(idx, e)}
+                        onChange={(e) => handleAssetChange(idx, e)}
                         className="px-2 py-1 border rounded"
                         placeholder="Quantity"
                         min="0"
@@ -384,7 +462,7 @@ const PortfolioRecommender = ({ onNavigate, setUserData }) => {
                         type="number"
                         name="currentValue"
                         value={asset.currentValue}
-                        onChange={e => handleAssetChange(idx, e)}
+                        onChange={(e) => handleAssetChange(idx, e)}
                         className="px-2 py-1 border rounded"
                         placeholder="Current Value"
                         min="0"
@@ -469,13 +547,13 @@ const PortfolioRecommender = ({ onNavigate, setUserData }) => {
                 disabled={loading}
                 className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white font-semibold py-3 px-6 rounded-lg transition-colors duration-200 flex items-center justify-center"
               >
-                {loading ? (
+                {loading && !recommendation ? (
                   <>
                     <Loader className="w-5 h-5 mr-2 animate-spin" />
                     Generating Recommendation...
                   </>
                 ) : (
-                  'Get Portfolio Recommendation'
+                  "Get Portfolio Recommendation"
                 )}
               </button>
             </form>
@@ -492,12 +570,13 @@ const PortfolioRecommender = ({ onNavigate, setUserData }) => {
                   Your Portfolio Awaits
                 </h3>
                 <p className="text-gray-600">
-                  Complete the form to receive your personalized investment recommendation
+                  Complete the form to receive your personalized investment
+                  recommendation
                 </p>
               </div>
             )}
 
-            {loading && (
+            {loading && !recommendation && (
               <div className="text-center py-12">
                 <Loader className="w-12 h-12 text-blue-600 animate-spin mx-auto mb-4" />
                 <h3 className="text-lg font-medium text-gray-900 mb-2">
@@ -510,74 +589,9 @@ const PortfolioRecommender = ({ onNavigate, setUserData }) => {
             )}
 
             {recommendation && (
-              <div>
-                <h2 className="text-xl font-semibold text-gray-900 mb-6">
-                  {formData.name ? `${formData.name}'s ` : 'Your '}Recommended Portfolio
-                </h2>
-
-                {/* Portfolio Allocation */}
-                <div className="mb-8">
-                  <div className="grid grid-cols-3 gap-4 mb-6">
-                    <div className="text-center p-4 bg-blue-50 rounded-lg">
-                      <div className="text-2xl font-bold text-blue-600">
-                        {recommendation.allocation.stocks}%
-                      </div>
-                      <div className="text-sm text-gray-600">Stocks</div>
-                    </div>
-                    <div className="text-center p-4 bg-blue-50 rounded-lg">
-                      <div className="text-2xl font-bold text-blue-600">
-                        {recommendation.allocation.bonds}%
-                      </div>
-                      <div className="text-sm text-gray-600">Bonds</div>
-                    </div>
-                    <div className="text-center p-4 bg-blue-50 rounded-lg">
-                      <div className="text-2xl font-bold text-blue-600">
-                        {recommendation.allocation.cash}%
-                      </div>
-                      <div className="text-sm text-gray-600">Cash</div>
-                    </div>
-                  </div>
-
-                  {/* Pie Chart */}
-                  <div className="h-64">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <PieChart>
-                        <Pie
-                          data={pieData}
-                          cx="50%"
-                          cy="50%"
-                          innerRadius={40}
-                          outerRadius={80}
-                          paddingAngle={5}
-                          dataKey="value"
-                        >
-                          {pieData.map((entry, index) => (
-                            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                          ))}
-                        </Pie>
-                        <Tooltip formatter={(value) => [`${value}%`, 'Allocation']} />
-                        <Legend />
-                      </PieChart>
-                    </ResponsiveContainer>
-                  </div>
-                </div>
-
-                {/* AI Explanation */}
-                <div className="bg-gray-50 rounded-lg p-6">
-                  <h3 className="font-semibold text-gray-900 mb-3">
-                    Why This Portfolio?
-                  </h3>
-                  <div className="text-gray-700 text-sm leading-relaxed whitespace-pre-line">
-                    {recommendation.explanation}
-                  </div>
-                </div>
-
-                <div className="mt-6 p-4 bg-blue-50 rounded-lg">
-                  <p className="text-xs text-blue-800">
-                    <strong>Disclaimer:</strong> This recommendation is for educational purposes only and should not be considered as personalized investment advice. Please consult with a Citi Wealth Management advisor for comprehensive financial planning.
-                  </p>
-                </div>
-              </div>
+              <>
+                <PortfolioDashboard portfolioData={recommendation} />
+              </>
             )}
           </div>
         </div>
@@ -588,20 +602,18 @@ const PortfolioRecommender = ({ onNavigate, setUserData }) => {
 
 // Main navigation logic
 const Main = () => {
-  const [page, setPage] = useState('home');
+  const [page, setPage] = useState("home");
   const [userData, setUserData] = useState(null);
 
   return (
     <>
-      {page === 'form' && (
+      {page === "form" && (
         <PortfolioRecommender onNavigate={setPage} setUserData={setUserData} />
       )}
-      {page === 'portfolio' && (
+      {page === "portfolio" && (
         <PortfolioPage onNavigate={setPage} userData={userData} />
       )}
-      {page === 'home' && (
-        <HomePage onNavigate={setPage} />
-      )}
+      {page === "home" && <HomePage onNavigate={setPage} />}
     </>
   );
 };
