@@ -1,0 +1,412 @@
+import React, { useState } from 'react';
+import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
+import { TrendingUp, DollarSign, Shield, Target, User, Calendar, Loader } from 'lucide-react';
+
+const PortfolioRecommender = () => {
+  const [formData, setFormData] = useState({
+    name: '',
+    age: '',
+    income: '',
+    riskTolerance: '',
+    goal: ''
+  });
+  
+  const [recommendation, setRecommendation] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  const calculatePortfolio = (age, riskTolerance, goal) => {
+    let stocks = 0;
+    let bonds = 0;
+    let cash = 0;
+
+    // Base allocation based on age (rule of thumb: 100 - age = stock percentage)
+    const baseStockPercentage = Math.max(20, Math.min(90, 100 - parseInt(age)));
+    
+    // Adjust based on risk tolerance
+    let riskMultiplier = 1;
+    switch (riskTolerance) {
+      case 'Low':
+        riskMultiplier = 0.7;
+        break;
+      case 'Medium':
+        riskMultiplier = 1;
+        break;
+      case 'High':
+        riskMultiplier = 1.3;
+        break;
+    }
+
+    stocks = Math.min(90, Math.max(10, Math.round(baseStockPercentage * riskMultiplier)));
+
+    // Adjust based on goal
+    switch (goal) {
+      case 'Retirement':
+        if (parseInt(age) > 50) {
+          stocks = Math.max(30, stocks - 10);
+          bonds = 60;
+          cash = 10;
+        } else {
+          bonds = Math.round((100 - stocks) * 0.8);
+          cash = 100 - stocks - bonds;
+        }
+        break;
+      case 'Education':
+        stocks = Math.max(40, stocks - 5);
+        bonds = Math.round((100 - stocks) * 0.7);
+        cash = 100 - stocks - bonds;
+        break;
+      case 'Growth':
+        stocks = Math.min(85, stocks + 5);
+        bonds = Math.round((100 - stocks) * 0.6);
+        cash = 100 - stocks - bonds;
+        break;
+    }
+
+    // Ensure percentages add up to 100
+    const total = stocks + bonds + cash;
+    if (total !== 100) {
+      const diff = 100 - total;
+      bonds += diff;
+    }
+
+    return { stocks, bonds, cash };
+  };
+
+  const generateAIExplanation = async (userData, allocation) => {
+    // Simulate AI API call with realistic explanation generation
+    await new Promise(resolve => setTimeout(resolve, 2000)); // Simulate API delay
+    
+    const { age, riskTolerance, goal, income } = userData;
+    const { stocks, bonds, cash } = allocation;
+    
+    let explanation = `Based on your profile, here's why we recommend this allocation:\n\n`;
+    
+    // Age-based reasoning
+    if (parseInt(age) < 35) {
+      explanation += `At ${age} years old, you have a long investment horizon, allowing for higher equity exposure to maximize growth potential. `;
+    } else if (parseInt(age) < 55) {
+      explanation += `At ${age} years old, you're in your prime earning years with moderate time horizon, balancing growth with some stability. `;
+    } else {
+      explanation += `At ${age} years old, we've increased bond allocation to preserve capital while maintaining some growth exposure. `;
+    }
+
+    // Risk tolerance reasoning
+    switch (riskTolerance) {
+      case 'Low':
+        explanation += `Your conservative risk profile led us to emphasize stability with ${bonds}% bonds and ${cash}% cash, while still maintaining ${stocks}% stocks for inflation protection. `;
+        break;
+      case 'Medium':
+        explanation += `Your moderate risk tolerance allows for a balanced approach with ${stocks}% stocks for growth and ${bonds}% bonds for stability. `;
+        break;
+      case 'High':
+        explanation += `Your high risk tolerance enables aggressive growth with ${stocks}% stocks, accepting higher volatility for potentially greater returns. `;
+        break;
+    }
+
+    // Goal-based reasoning
+    switch (goal) {
+      case 'Retirement':
+        explanation += `For retirement planning, we've structured this portfolio to provide long-term growth while gradually becoming more conservative as you approach retirement age.`;
+        break;
+      case 'Education':
+        explanation += `For education funding, this allocation balances growth potential with capital preservation, ensuring funds will be available when needed.`;
+        break;
+      case 'Growth':
+        explanation += `For wealth growth, we've maximized equity exposure while maintaining prudent diversification across asset classes.`;
+        break;
+    }
+
+    explanation += `\n\nThis allocation aligns with Citi's investment philosophy of diversified, risk-adjusted portfolio construction tailored to your individual circumstances.`;
+    
+    return explanation;
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    
+    if (!formData.age || !formData.income || !formData.riskTolerance || !formData.goal) {
+      setError('Please fill in all required fields.');
+      return;
+    }
+
+    setLoading(true);
+    setError('');
+
+    try {
+      const allocation = calculatePortfolio(formData.age, formData.riskTolerance, formData.goal);
+      const explanation = await generateAIExplanation(formData, allocation);
+      
+      setRecommendation({
+        allocation,
+        explanation,
+        userData: formData
+      });
+    } catch (err) {
+      setError('Failed to generate recommendation. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const pieData = recommendation ? [
+    { name: 'Stocks', value: recommendation.allocation.stocks, color: '#0066CC' },
+    { name: 'Bonds', value: recommendation.allocation.bonds, color: '#66B2FF' },
+    { name: 'Cash', value: recommendation.allocation.cash, color: '#B3D9FF' }
+  ] : [];
+
+  const COLORS = ['#0066CC', '#66B2FF', '#B3D9FF'];
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-white">
+      {/* Header */}
+      <div className="bg-white shadow-sm border-b border-gray-200">
+        <div className="max-w-6xl mx-auto px-6 py-4">
+          <div className="flex items-center space-x-3">
+            <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
+              <TrendingUp className="w-5 h-5 text-white" />
+            </div>
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900">Citi Wealth Management</h1>
+              <p className="text-sm text-gray-600">AI-Powered Portfolio Recommender</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="max-w-6xl mx-auto px-6 py-8">
+        <div className="grid lg:grid-cols-2 gap-8">
+          {/* Form Section */}
+          <div className="bg-white rounded-xl shadow-lg p-8">
+            <h2 className="text-xl font-semibold text-gray-900 mb-6 flex items-center">
+              <User className="w-5 h-5 mr-2 text-blue-600" />
+              Your Investment Profile
+            </h2>
+            
+            <form onSubmit={handleSubmit} className="space-y-6">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Name (Optional)
+                </label>
+                <input
+                  type="text"
+                  name="name"
+                  value={formData.name}
+                  onChange={handleInputChange}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                  placeholder="Enter your name"
+                />
+              </div>
+
+              <div className="grid md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <Calendar className="w-4 h-4 inline mr-1" />
+                    Age *
+                  </label>
+                  <input
+                    type="number"
+                    name="age"
+                    value={formData.age}
+                    onChange={handleInputChange}
+                    min="18"
+                    max="100"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                    placeholder="25"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <DollarSign className="w-4 h-4 inline mr-1" />
+                    Annual Income *
+                  </label>
+                  <input
+                    type="number"
+                    name="income"
+                    value={formData.income}
+                    onChange={handleInputChange}
+                    min="0"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                    placeholder="75000"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <Shield className="w-4 h-4 inline mr-1" />
+                  Risk Tolerance *
+                </label>
+                <select
+                  name="riskTolerance"
+                  value={formData.riskTolerance}
+                  onChange={handleInputChange}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                  required
+                >
+                  <option value="">Select risk tolerance</option>
+                  <option value="Low">Low - Conservative</option>
+                  <option value="Medium">Medium - Balanced</option>
+                  <option value="High">High - Aggressive</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <Target className="w-4 h-4 inline mr-1" />
+                  Financial Goal *
+                </label>
+                <select
+                  name="goal"
+                  value={formData.goal}
+                  onChange={handleInputChange}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                  required
+                >
+                  <option value="">Select your goal</option>
+                  <option value="Retirement">Retirement Planning</option>
+                  <option value="Education">Education Funding</option>
+                  <option value="Growth">Wealth Growth</option>
+                </select>
+              </div>
+
+              {error && (
+                <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                  <p className="text-red-800 text-sm">{error}</p>
+                </div>
+              )}
+
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white font-semibold py-3 px-6 rounded-lg transition-colors duration-200 flex items-center justify-center"
+              >
+                {loading ? (
+                  <>
+                    <Loader className="w-5 h-5 mr-2 animate-spin" />
+                    Generating Recommendation...
+                  </>
+                ) : (
+                  'Get Portfolio Recommendation'
+                )}
+              </button>
+            </form>
+          </div>
+
+          {/* Results Section */}
+          <div className="bg-white rounded-xl shadow-lg p-8">
+            {!recommendation && !loading && (
+              <div className="text-center py-12">
+                <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <TrendingUp className="w-8 h-8 text-blue-600" />
+                </div>
+                <h3 className="text-lg font-medium text-gray-900 mb-2">
+                  Your Portfolio Awaits
+                </h3>
+                <p className="text-gray-600">
+                  Complete the form to receive your personalized investment recommendation
+                </p>
+              </div>
+            )}
+
+            {loading && (
+              <div className="text-center py-12">
+                <Loader className="w-12 h-12 text-blue-600 animate-spin mx-auto mb-4" />
+                <h3 className="text-lg font-medium text-gray-900 mb-2">
+                  Analyzing Your Profile
+                </h3>
+                <p className="text-gray-600">
+                  Our AI is crafting your personalized portfolio...
+                </p>
+              </div>
+            )}
+
+            {recommendation && (
+              <div>
+                <h2 className="text-xl font-semibold text-gray-900 mb-6">
+                  {formData.name ? `${formData.name}'s ` : 'Your '}Recommended Portfolio
+                </h2>
+
+                {/* Portfolio Allocation */}
+                <div className="mb-8">
+                  <div className="grid grid-cols-3 gap-4 mb-6">
+                    <div className="text-center p-4 bg-blue-50 rounded-lg">
+                      <div className="text-2xl font-bold text-blue-600">
+                        {recommendation.allocation.stocks}%
+                      </div>
+                      <div className="text-sm text-gray-600">Stocks</div>
+                    </div>
+                    <div className="text-center p-4 bg-blue-50 rounded-lg">
+                      <div className="text-2xl font-bold text-blue-600">
+                        {recommendation.allocation.bonds}%
+                      </div>
+                      <div className="text-sm text-gray-600">Bonds</div>
+                    </div>
+                    <div className="text-center p-4 bg-blue-50 rounded-lg">
+                      <div className="text-2xl font-bold text-blue-600">
+                        {recommendation.allocation.cash}%
+                      </div>
+                      <div className="text-sm text-gray-600">Cash</div>
+                    </div>
+                  </div>
+
+                  {/* Pie Chart */}
+                  <div className="h-64">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <PieChart>
+                        <Pie
+                          data={pieData}
+                          cx="50%"
+                          cy="50%"
+                          innerRadius={40}
+                          outerRadius={80}
+                          paddingAngle={5}
+                          dataKey="value"
+                        >
+                          {pieData.map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                          ))}
+                        </Pie>
+                        <Tooltip formatter={(value) => [`${value}%`, 'Allocation']} />
+                        <Legend />
+                      </PieChart>
+                    </ResponsiveContainer>
+                  </div>
+                </div>
+
+                {/* AI Explanation */}
+                <div className="bg-gray-50 rounded-lg p-6">
+                  <h3 className="font-semibold text-gray-900 mb-3">
+                    Why This Portfolio?
+                  </h3>
+                  <div className="text-gray-700 text-sm leading-relaxed whitespace-pre-line">
+                    {recommendation.explanation}
+                  </div>
+                </div>
+
+                <div className="mt-6 p-4 bg-blue-50 rounded-lg">
+                  <p className="text-xs text-blue-800">
+                    <strong>Disclaimer:</strong> This recommendation is for educational purposes only and should not be considered as personalized investment advice. Please consult with a Citi Wealth Management advisor for comprehensive financial planning.
+                  </p>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default PortfolioRecommender;
