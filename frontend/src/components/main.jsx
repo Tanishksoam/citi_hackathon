@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
+import { BrowserRouter, Routes, Route, useNavigate } from 'react-router-dom';
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
 import { TrendingUp, DollarSign, Shield, Target, User, Calendar, Loader } from 'lucide-react';
 import PortfolioPage from "./PortfolioPage";
 import HomePage from "./HomePage";
+import Header from "./header";
 
 // PortfolioRecommender component
 const PortfolioRecommender = ({ onNavigate, setUserData }) => {
@@ -588,21 +590,47 @@ const PortfolioRecommender = ({ onNavigate, setUserData }) => {
 
 // Main navigation logic
 const Main = () => {
-  const [page, setPage] = useState('home');
   const [userData, setUserData] = useState(null);
 
-  return (
-    <>
-      {page === 'form' && (
-        <PortfolioRecommender onNavigate={setPage} setUserData={setUserData} />
-      )}
-      {page === 'portfolio' && (
-        <PortfolioPage onNavigate={setPage} userData={userData} />
-      )}
-      {page === 'home' && (
-        <HomePage onNavigate={setPage} />
-      )}
-    </>
+  // Wrapper to provide navigation via useNavigate
+  const RoutedPages = () => {
+    const navigate = useNavigate();
+    const handleNavigate = (page) => {
+      switch (page) {
+        case 'home':
+          navigate('/');
+          break;
+        case 'form':
+          navigate('/form');
+          break;
+        case 'portfolio':
+          navigate('/portfolio');
+          break;
+        case 'sentiment':
+          navigate('/sentiment');
+          break;
+        default:
+          navigate('/');
+      }
+    };
+
+    return (
+      <>
+        <Header currentPage={window.location.pathname.replace('/', '') || 'home'} onNavigate={handleNavigate} />
+        <Routes>
+          <Route path="/" element={<HomePage onNavigate={handleNavigate} />} />
+          <Route path="/form" element={<PortfolioRecommender onNavigate={handleNavigate} setUserData={setUserData} />} />
+          <Route path="/portfolio" element={<PortfolioPage onNavigate={handleNavigate} userData={userData} />} />
+          {/* Add more routes as needed */}
+        </Routes>
+      </>
+    );
+  };
+
+    return (
+    <BrowserRouter>
+      <RoutedPages />
+    </BrowserRouter>
   );
 };
 
