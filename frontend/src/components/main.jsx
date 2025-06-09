@@ -1,25 +1,63 @@
 import React, { useState } from 'react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
 import { TrendingUp, DollarSign, Shield, Target, User, Calendar, Loader } from 'lucide-react';
+import PortfolioPage from "./PortfolioPage";
+import HomePage from "./HomePage";
 
-const PortfolioRecommender = () => {
+// PortfolioRecommender component
+const PortfolioRecommender = ({ onNavigate, setUserData }) => {
   const [formData, setFormData] = useState({
     name: '',
     age: '',
     income: '',
     riskTolerance: '',
-    goal: ''
+    goal: '',
+    assets: [
+      // Example initial asset
+      { assetType: '', name: '', symbol: '', quantity: '', currentValue: '' }
+    ],
+    totalInvestment: '',
+    annualSavings: '',
+    timeHorizon: ''
   });
-  
+
   const [recommendation, setRecommendation] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
+  // Handle input change for normal fields
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({
       ...prev,
       [name]: value
+    }));
+  };
+
+  // Handle asset field changes
+  const handleAssetChange = (idx, e) => {
+    const { name, value } = e.target;
+    setFormData(prev => {
+      const updatedAssets = prev.assets.map((asset, i) =>
+        i === idx ? { ...asset, [name]: value } : asset
+      );
+      return { ...prev, assets: updatedAssets };
+    });
+  };
+
+  // Add a new asset row
+  const handleAddAsset = () => {
+    setFormData(prev => ({
+      ...prev,
+      assets: [...prev.assets, { assetType: '', name: '', symbol: '', quantity: '', currentValue: '' }]
+    }));
+  };
+
+  // Remove an asset row
+  const handleRemoveAsset = (idx) => {
+    setFormData(prev => ({
+      ...prev,
+      assets: prev.assets.filter((_, i) => i !== idx)
     }));
   };
 
@@ -30,7 +68,7 @@ const PortfolioRecommender = () => {
 
     // Base allocation based on age (rule of thumb: 100 - age = stock percentage)
     const baseStockPercentage = Math.max(20, Math.min(90, 100 - parseInt(age)));
-    
+
     // Adjust based on risk tolerance
     let riskMultiplier = 1;
     switch (riskTolerance) {
@@ -84,12 +122,12 @@ const PortfolioRecommender = () => {
   const generateAIExplanation = async (userData, allocation) => {
     // Simulate AI API call with realistic explanation generation
     await new Promise(resolve => setTimeout(resolve, 2000)); // Simulate API delay
-    
+
     const { age, riskTolerance, goal, income } = userData;
     const { stocks, bonds, cash } = allocation;
-    
+
     let explanation = `Based on your profile, here's why we recommend this allocation:\n\n`;
-    
+
     // Age-based reasoning
     if (parseInt(age) < 35) {
       explanation += `At ${age} years old, you have a long investment horizon, allowing for higher equity exposure to maximize growth potential. `;
@@ -126,14 +164,22 @@ const PortfolioRecommender = () => {
     }
 
     explanation += `\n\nThis allocation aligns with Citi's investment philosophy of diversified, risk-adjusted portfolio construction tailored to your individual circumstances.`;
-    
+
     return explanation;
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
-    if (!formData.age || !formData.income || !formData.riskTolerance || !formData.goal) {
+
+    if (
+      !formData.age ||
+      !formData.income ||
+      !formData.riskTolerance ||
+      !formData.goal ||
+      !formData.totalInvestment ||
+      !formData.annualSavings ||
+      !formData.timeHorizon
+    ) {
       setError('Please fill in all required fields.');
       return;
     }
@@ -144,12 +190,24 @@ const PortfolioRecommender = () => {
     try {
       const allocation = calculatePortfolio(formData.age, formData.riskTolerance, formData.goal);
       const explanation = await generateAIExplanation(formData, allocation);
-      
+
       setRecommendation({
         allocation,
         explanation,
         userData: formData
       });
+      setUserData({
+        name: formData.name,
+        age: formData.age,
+        income: formData.income,
+        riskTolerance: formData.riskTolerance,
+        financialGoal: formData.goal,
+        assets: formData.assets,
+        totalInvestment: formData.totalInvestment,
+        annualSavings: formData.annualSavings,
+        timeHorizon: formData.timeHorizon
+      });
+      onNavigate('portfolio');
     } catch (err) {
       setError('Failed to generate recommendation. Please try again.');
     } finally {
@@ -190,7 +248,7 @@ const PortfolioRecommender = () => {
               <User className="w-5 h-5 mr-2 text-blue-600" />
               Your Investment Profile
             </h2>
-            
+
             <form onSubmit={handleSubmit} className="space-y-6">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -279,6 +337,125 @@ const PortfolioRecommender = () => {
                   <option value="Education">Education Funding</option>
                   <option value="Growth">Wealth Growth</option>
                 </select>
+              </div>
+
+              {/* New fields for assets */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Assets
+                </label>
+                {formData.assets.map((asset, idx) => (
+                  <div key={idx} className="mb-4 p-4 border rounded-lg bg-gray-50 relative">
+                    <div className="flex flex-col gap-2">
+                      <input
+                        type="text"
+                        name="assetType"
+                        value={asset.assetType}
+                        onChange={e => handleAssetChange(idx, e)}
+                        className="px-2 py-1 border rounded"
+                        placeholder="Asset Type (e.g. stock)"
+                      />
+                      <input
+                        type="text"
+                        name="name"
+                        value={asset.name}
+                        onChange={e => handleAssetChange(idx, e)}
+                        className="px-2 py-1 border rounded"
+                        placeholder="Name (e.g. Apple Inc.)"
+                      />
+                      <input
+                        type="text"
+                        name="symbol"
+                        value={asset.symbol}
+                        onChange={e => handleAssetChange(idx, e)}
+                        className="px-2 py-1 border rounded"
+                        placeholder="Symbol (e.g. AAPL)"
+                      />
+                      <input
+                        type="number"
+                        name="quantity"
+                        value={asset.quantity}
+                        onChange={e => handleAssetChange(idx, e)}
+                        className="px-2 py-1 border rounded"
+                        placeholder="Quantity"
+                        min="0"
+                      />
+                      <input
+                        type="number"
+                        name="currentValue"
+                        value={asset.currentValue}
+                        onChange={e => handleAssetChange(idx, e)}
+                        className="px-2 py-1 border rounded"
+                        placeholder="Current Value"
+                        min="0"
+                      />
+                    </div>
+                    {formData.assets.length > 1 && (
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveAsset(idx)}
+                        className="absolute top-2 right-2 text-red-500 text-xs"
+                      >
+                        Remove
+                      </button>
+                    )}
+                  </div>
+                ))}
+                <button
+                  type="button"
+                  onClick={handleAddAsset}
+                  className="mt-2 px-4 py-2 bg-blue-100 text-blue-700 rounded hover:bg-blue-200 text-sm"
+                >
+                  Add Asset
+                </button>
+              </div>
+
+              <div className="grid md:grid-cols-3 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Total Investment *
+                  </label>
+                  <input
+                    type="number"
+                    name="totalInvestment"
+                    value={formData.totalInvestment}
+                    onChange={handleInputChange}
+                    min="0"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                    placeholder="Total Investment"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Annual Savings *
+                  </label>
+                  <input
+                    type="number"
+                    name="annualSavings"
+                    value={formData.annualSavings}
+                    onChange={handleInputChange}
+                    min="0"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                    placeholder="Annual Savings"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Time Horizon (years) *
+                  </label>
+                  <input
+                    type="number"
+                    name="timeHorizon"
+                    value={formData.timeHorizon}
+                    onChange={handleInputChange}
+                    min="1"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                    placeholder="Time Horizon"
+                    required
+                  />
+                </div>
               </div>
 
               {error && (
@@ -409,4 +586,24 @@ const PortfolioRecommender = () => {
   );
 };
 
-export default PortfolioRecommender;
+// Main navigation logic
+const Main = () => {
+  const [page, setPage] = useState('home');
+  const [userData, setUserData] = useState(null);
+
+  return (
+    <>
+      {page === 'form' && (
+        <PortfolioRecommender onNavigate={setPage} setUserData={setUserData} />
+      )}
+      {page === 'portfolio' && (
+        <PortfolioPage onNavigate={setPage} userData={userData} />
+      )}
+      {page === 'home' && (
+        <HomePage onNavigate={setPage} />
+      )}
+    </>
+  );
+};
+
+export default Main;
