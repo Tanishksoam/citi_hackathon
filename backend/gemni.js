@@ -1,28 +1,10 @@
 import express from "express";
-import connectDB from "./config/db.js";
-import userRoutes from "./routes/userRoutes.js";
-import portfolioRoutes from "./routes/portfolioRoutes.js";
-import aiRoutes from "./routes/aiRoutes.js";
 import axios from "axios";
-import cors from "cors";
 import dotenv from "dotenv";
 
 dotenv.config();
-
 const app = express();
-
-// Middleware
-app.use(cors());
 app.use(express.json());
-
-// Connect Database
-connectDB();
-
-// Routes
-app.use("/api/users", userRoutes);
-app.use("/api/portfolio", portfolioRoutes);
-app.use("/api/ai", aiRoutes);
-// app.use("/", geminiRoute);
 
 const PORT = process.env.PORT || 3000;
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
@@ -168,4 +150,6 @@ Return your answer strictly as a JSON object with this structure:
   }
 });
 
-export default app;
+app.listen(PORT, () => {
+  console.log(`Server running on http://localhost:${PORT}`);
+});
